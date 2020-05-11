@@ -1,27 +1,95 @@
 require 'pry'
 
+# https://www.rubydoc.info/gems/tty-prompt#1-usage
+require "tty-prompt"
+
+
+
 class AppCli
 
+    attr_accessor :this_student
+
     def login
-        puts "To login, type in your student id number from the list below: "
+        ## puts "To login, type in your student id number from the list below: "
         Student.all.each do |stud|
             puts "ID# #{stud.id}: #{stud.name}"
         end
-        id_this_student = gets.chomp
-
-        if Student.find_by(id: id_this_student) == nil
-            puts "Please enter a valid ID number."
+        ## id_this_student = gets.chomp
+        prompt = TTY::Prompt.new
+        id_this_student = prompt.ask('What is your name?', default: ENV['student']).capitalize
+        ##if Student.find_by(id: id_this_student) == nil
+        if Student.find_by(name: id_this_student) == nil
+            ## puts "Please enter a valid ID number."
+            puts "Please enter your correct name."
             return login
         end
-        this_student = Student.find_by(id: id_this_student)
+        ## this_student = Student.find_by(id: id_this_student)
+        this_student = Student.find_by(name: id_this_student)
+        @this_student = this_student
+
 
         #greeting(this_student)
         #this_student
     end
 
-    def greeting(this_student)  
-     
-        puts "Hi, *** #{this_student.name} ***! Let's sharpen your English skills."
+   # private
+
+    def greeting #(this_student)   
+        ## puts "Hi, *** #{@this_student.upcase} ***! Let's sharpen your English skills."
+        puts "Hi, *** #{@this_student.name} ***! Let's sharpen your English skills."
+        puts "Type in the double letters of the activity you would like to do: "
+
+            activities #(this_student)
+    end
+
+    def activities #(this_student)
+        
+            puts "Enter double letters AA, BB, CC, DD, EE, or FF to pull up this menu bar at any time."
+            puts "ENTER: AA (review a story) || BB (see reviews by students) || CC (see story reviews) || DD (edit a review) || EE (delete a review) || FF (all done)"
+        
+            activity = gets.chomp.upcase
+
+            if activity == "AA"
+                puts "======================================================================================================="
+
+                review_a_story #(this_student)
+         
+                 puts "======================================================================================================="
+            elsif activity == "BB"
+                puts "======================================================================================================="
+
+                select_a_student #(this_student)
+        
+                puts "======================================================================================================="
+            elsif activity == "CC"                    
+                puts "======================================================================================================="
+        
+                select_a_story #(this_student)
+        
+                puts "======================================================================================================="
+            elsif activity == "DD"
+                puts "======================================================================================================="
+
+                select_one_of_your_reviews #(this_student)
+
+                puts "======================================================================================================="
+            elsif activity == "EE"
+                puts "======================================================================================================="
+
+                select_review_to_delete #(this_student)
+               
+                puts "======================================================================================================="        
+            elsif activity == "FF"
+                puts "======================================================================================================="
+
+                adios #(this_student)
+               
+                puts "======================================================================================================="        
+            else
+                puts "Please enter AA, BB, CC, DD, EE, or FF:"
+                return activities
+            end
+
     end
 
     def lists_reviews
@@ -36,7 +104,7 @@ class AppCli
         end
     end
     
-    def review_a_story(this_student)
+    def review_a_story #(this_student)
 
         puts "Ready to review a story? Please type in a story ID number from the list below."
 
@@ -44,34 +112,48 @@ class AppCli
         
         id_story_to_review = gets.chomp
 
-        if Story.find_by(id: id_story_to_review) == nil
+        if id_story_to_review.upcase == "AA" || id_story_to_review.upcase == "BB" || id_story_to_review.upcase == "CC" || id_story_to_review.upcase == "DD" || id_story_to_review.upcase == "EE"
+#binding.pry
+            # puts "Please re-enter your activity choice:"
+            return activities
+        elsif Story.find_by(id: id_story_to_review) == nil 
             puts "Please enter a valid ID number."
-            return review_a_story(this_student)
+            return review_a_story #(this_student)
         end
         story_to_review = Story.find_by(id: id_story_to_review)
 
         puts "Please enter your review for #{story_to_review.title}."
         rev_input = gets.chomp
 
-        this_review = Review.create(student: this_student, story: story_to_review, comment: rev_input)
+        if rev_input == "AA" || rev_input == "BB" || rev_input == "CC" || rev_input == "DD" || rev_input == "EE" || rev_input == "FF"
+            puts "Please re-enter your activity choice:"
+            return activities
+        end
 
+        this_review = Review.create(student: @this_student, story: story_to_review, comment: rev_input)
+
+        puts "ID# #{this_review.id}: #{this_review.story.title} REVIEW #{this_review.comment}"
         puts "Thank you for your review!"
-        puts "ID# #{this_review.id}: REVIEWED STORY #{this_review.story.title} REVIEW #{this_review.comment}"
 
+        activities
     end
 
-    def select_a_student(this_student)
-        puts "#{this_student.name}, select a student ID number to see all the reviews by that student: "
+    def select_a_student #(this_student)
+        puts "#{@this_student.name}, select a student ID number to see all the reviews by that student: "
         Student.all.each do |stud|
             puts "ID# #{stud.id}: #{stud.name}"
         end
         id_student_rev = gets.chomp
 
-        if Student.find_by(id: id_student_rev) == nil
+        if id_student_rev.upcase == "AA" || id_student_rev.upcase == "BB" || id_student_rev.upcase == "CC" || id_student_rev.upcase == "DD" || id_student_rev.upcase == "EE" || id_student_rev.upcase == "FF"
+            
+            return activities       
+        elsif Student.find_by(id: id_student_rev) == nil
             puts "Please enter a valid ID number."
-            return select_a_student(this_student)
+            return select_a_student #(this_student)
         end
-        student_rev = Student.find_by(id: id_student_rev)
+            student_rev = Student.find_by(id: id_student_rev)
+        
 
         # Array of all reviews by the selected student
         rev_by_student_rev = Review.all.where(student: student_rev)
@@ -79,6 +161,8 @@ class AppCli
         all_reviews_by_a_student(student_rev, rev_by_student_rev)
         all_story_titles_reviewed_by_a_student(student_rev, rev_by_student_rev)
         all_story_titles_and_reviews_by_a_student(student_rev, rev_by_student_rev)
+
+        activities
     end
 
     def all_reviews_by_a_student(student_rev, rev_by_student_rev)
@@ -99,17 +183,20 @@ class AppCli
 
 
 
-    def select_a_story(this_student)
+    def select_a_story #(this_student)
 
-        puts "#{this_student.name}, do you want to see all the reviews for a story?  Select a story title, then type in the corresponding ID number: "
+        puts "#{@this_student.name}, do you want to see all the reviews for a story?  Select a story title, then type in the corresponding ID number: "
         Story.all.each do |stud|
             puts "ID# #{stud.id}: #{stud.title}"
         end
         id_story_rev = gets.chomp
 
-        if Story.find_by(id: id_story_rev) == nil
+
+        if id_story_rev.upcase == "AA" || id_story_rev.upcase == "BB" || id_story_rev.upcase == "CC" || id_story_rev.upcase == "DD" || id_story_rev.upcase == "EE" || id_story_rev.upcase == "FF"            
+            return activities       
+        elsif Story.find_by(id: id_story_rev) == nil
             puts "Please enter a valid ID number."
-            return select_a_story(this_student)
+            return select_a_story #(this_student)
         end
         story_rev = Story.find_by(id: id_story_rev)
 
@@ -141,61 +228,75 @@ class AppCli
     #     this_student.reviews
     # end
 
-    def select_one_of_your_reviews(this_student)
-        puts "Having second thoughts about one of your reviews? Your reviews are listed below. To change a review, type in the corresponding ID number:"
-        this_student.reviews.each do |rev|
-            puts "ID# #{rev.id}: For the story: #{rev.story.title}, you commented: #{rev.comment}"
+    def select_one_of_your_reviews #(this_student)
+        puts "All of your reviews are listed below. To change a review, type in the corresponding ID number:"
+        @this_student.reviews.each do |rev|
+            puts "ID# #{rev.id}: #{rev.story.title} REVIEW #{rev.comment}"
         end
         id_change_rev = gets.chomp
 
-        if Review.find_by(id: id_change_rev) == nil
+        if id_change_rev.upcase == "AA" || id_change_rev.upcase == "BB" || id_change_rev.upcase == "CC" || id_change_rev.upcase == "DD" || id_change_rev.upcase == "EE" || id_change_rev.upcase == "FF"           
+            return activities
+        elsif Review.find_by(id: id_change_rev) == nil
             puts "Please enter a valid ID number."
-            return select_one_of_your_reviews(this_student)
+            return select_one_of_your_reviews #(this_student)
         end
         change_rev = Review.find_by(id: id_change_rev)
 
-        change_review(this_student, change_rev)
+        change_review(change_rev) #this_student, 
+
+        activities
     end
 
-    def change_review(this_student, change_rev)
+    def change_review(change_rev) #this_student, 
         puts "This is the review you selected to change: #{change_rev.story.title}: #{change_rev.comment}"
         puts "Copy/paste and then edit your original review or re-write the review."
         revised_review = gets.chomp
 
+        if revised_review.upcase == "AA" || revised_review.upcase == "BB" || revised_review.upcase == "CC" || revised_review.upcase == "DD" || revised_review.upcase == "EE" || revised_review.upcase == "FF"
+            return activities
+        end
+
         change_rev.comment = revised_review
         change_rev.save
-        this_student.reload
+        @this_student.reload
 
-        confirm_review_change(this_student)
+        confirm_review_change(change_rev) #(this_student)
     end
 
-    def confirm_review_change(this_student)
+    def confirm_review_change(change_rev) #(this_student)
         puts "Your changes have been saved, thank you."
-        this_student.reviews.each do |rev|
-            puts "ID# #{rev.id}: For the story: #{rev.story.title}, you commented: #{rev.comment}"
-        end
+        #@this_student.reviews.each do |rev|
+            puts "ID# #{change_rev.id}: #{change_rev.story.title} EDITED REVIEW: #{change_rev.comment}"
+            #puts "EDITED REVIEW: ID# #{rev.id}: For the story: #{rev.story.title}, you commented: #{rev.comment}"
+        #end
     end
 
-    def select_review_to_delete(this_student)
-        puts "You have #{this_student.reviews.length} reviews, #{this_student.name}. To delete one, type in the corresponding ID number:"
-        #puts "Do you want to get rid of a review? Type in the ID number of the review you want to delete."
+    def select_review_to_delete #(this_student)
+        puts "All #{@this_student.reviews.length} of your reviews are listed below, #{@this_student.name}. To delete one, type in the corresponding ID number:"
 
-        this_student.reviews.each do |rev|
-            puts "ID# #{rev.id}: For the story: #{rev.story.title}, you commented: #{rev.comment}"
+        @this_student.reviews.each do |rev|
+            puts "ID# #{rev.id}: #{rev.story.title} REVIEW: #{rev.comment}"
         end
         id_delete_rev = gets.chomp
 
-        if Review.find_by(id: id_delete_rev) == nil
+        if id_delete_rev.upcase == "AA" || id_delete_rev.upcase == "BB" || id_delete_rev.upcase == "CC" || id_delete_rev.upcase == "DD" || id_delete_rev.upcase == "EE" || id_delete_rev.upcase == "FF"
+            return activities
+        elsif Review.find_by(id: id_delete_rev) == nil
             puts "Please enter a valid ID number."
-            return select_review_to_delete(this_student)
+            return select_review_to_delete #(this_student)
         end
         delete_rev = Review.find_by(id: id_delete_rev)
 
-        delete_review(this_student, delete_rev)
+        delete_review(delete_rev) #this_student, 
+
+        activities
     end
 
-    def delete_review(this_student, delete_rev)
-        puts "Is this the review you want to delete? Type: YES or NO: #{delete_rev.story.title}: #{delete_rev.comment}"
+    def delete_review(delete_rev) #this_student, 
+        @this_student.reload
+        puts "#{delete_rev.story.title}: #{delete_rev.comment}: Is up for deletion: You can NOT undo a review deletion."
+        puts "Type YES to delete. Type NO if you do not want to delete."
 
         #puts "Type YES if this is the review you want to delete. #{delete_rev.story.title}: #{delete_rev.comment}"
         delete_this_rev = gets.chomp.upcase 
@@ -203,26 +304,29 @@ class AppCli
         if delete_this_rev == "YES"
             delete_rev.destroy
         elsif delete_this_rev == "NO"
-            return puts "Good choice. That review speaks truth!"
+            puts "Oops! Try again and if your review selection is still incorrect, contact web services for help."
+            return select_review_to_delete
         else
             puts "Please type YES or NO."
-            return delete_review(this_student, delete_rev)
+            return delete_review(delete_rev) #this_student, 
         end
 
-        this_student.reload
-        confirm_review_deleted(this_student)
+        @this_student.reload
+        confirm_review_deleted(delete_rev) #(this_student)
     end
 
-    def confirm_review_deleted(this_student)
-        puts "Your review has been deleted. You now have #{this_student.reviews.length} reviews."
-        this_student.reviews.each do |rev|
+    def confirm_review_deleted(delete_rev) #(this_student)
+        puts "You have successfully deleted ID# #{delete_rev.id}: #{delete_rev.story.title} REVIEW #{delete_rev.comment}"
+        puts "You now have #{@this_student.reviews.length} reviews."
+        #puts "Your review has been deleted. You now have #{@this_student.reviews.length} reviews."
+        @this_student.reviews.each do |rev|
             puts "ID# #{rev.id}: For the story: #{rev.story.title}, you commented: #{rev.comment}"
         end
     end
 
     def adios
         puts "THANKS FOR VISITING: Come back soon for more English practice with English Reads!"
-        puts "To see a list of all reviews with corresponding reviewers, type YES:"
+        puts "But wait! Before you go, to see a list of all reviews with corresponding reviewers, type YES:"
         #input = gets.chomp.upcase
 
         wanna_see_reviews #(input)
@@ -234,7 +338,7 @@ class AppCli
         if input == "YES"
             lists_all_students_story_reviews
         elsif input == "NO"
-            return puts "Looking forward to seeing you soon at English Reads!"
+            return puts "Looking forward to seeing you next time, here at English Reads!"
         else
             puts "Please type YES or NO:"
             return wanna_see_reviews #(input)
@@ -254,81 +358,98 @@ class AppCli
 
 
 
-
-
-
-
     
     
     def run
         puts "Welcome to English Reads, the best resource for practicing English in the world!"       
-        this_student = login
-    
-        greeting(this_student)
-        
+       
+        # prompt = TTY::Prompt.new
+        # prompt.ask('What is your name?', default: ENV['student'])
 
-        ########### Create: Review a story ###########
+       
+       
+       
+       
+       
+        @this_student = login
+    
+        greeting #(this_student)
+
+        
+        ########### Decisions Decisions ###########
 
        puts "======================================================================================================="
 
-       review_a_story(this_student)
+       #decide_what_to_do #(this_student)
 
+       
         puts "======================================================================================================="
+
+        ########### END Decisions Decisions ###########
+
+
+        ########### Create: Review a story ###########
+
+    #    puts "======================================================================================================="
+
+    #    review_a_story #(this_student)
+
+    #     puts "======================================================================================================="
 
         ########### END Create: Review a story ###########
 
 
         ########### List reviews by a student ###########
 
-        puts "======================================================================================================="
+        # puts "======================================================================================================="
 
-        select_a_student(this_student)
+        # select_a_student #(this_student)
 
-        puts "======================================================================================================="
+        # puts "======================================================================================================="
         
         ########### END List reviews by a student ###########
 
 
         ########### List reviews of a story ###########
 
-        puts "======================================================================================================="
+        # puts "======================================================================================================="
         
-        select_a_story(this_student)
+        # select_a_story #(this_student)
 
-        puts "======================================================================================================="
+        # puts "======================================================================================================="
         
         ########### END List reviews of a story ###########
 
 
         ########### A student revises one of their review comments ###########
 
-        puts "======================================================================================================="
+        # puts "======================================================================================================="
 
-        select_one_of_your_reviews(this_student)
+        # select_one_of_your_reviews #(this_student)
 
-        puts "======================================================================================================="
+        # puts "======================================================================================================="
            
        ########### END A student revises one of their review comments ###########
        
               
         ########### Delete a review ###########
   
-        puts "======================================================================================================="
+        # puts "======================================================================================================="
 
-        select_review_to_delete(this_student)
+        # select_review_to_delete #(this_student)
        
-        puts "======================================================================================================="
+        # puts "======================================================================================================="
 
         ########### END Delete a review ###########
 
 
-        puts "======================================================================================================="
+    #     puts "======================================================================================================="
 
-       # puts "Are you done practicing for now? Type YES or NO:"
-        adios
+    #    # puts "Are you done practicing for now? Type YES or NO:"
+    #     adios
 
        
-        puts "======================================================================================================="
+    #     puts "======================================================================================================="
 
 
 
